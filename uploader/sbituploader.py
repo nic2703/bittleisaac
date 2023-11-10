@@ -8,7 +8,12 @@ def sbitupload(pi_host, pi_port, pi_username, pi_password, pi_path, filename=Non
         print("UPLOADER: STARTED")
         local_files = ['runscript.py']
         if filename is not None:
-            local_files.append(filename)
+            if isinstance(filename, str):
+                local_files.append(filename)
+            elif isinstance(filename, list):
+                local_files.extend(filename)
+            else:
+                raise ValueError("Invalid type for 'filename'. Should be a string or a list of strings")
         
         # Start SSH Client
         ssh_client = paramiko.SSHClient()
@@ -32,8 +37,11 @@ def sbitupload(pi_host, pi_port, pi_username, pi_password, pi_path, filename=Non
 
         # Run the script on the Raspberry Pi automatically
         command = f'python {pi_path}runscript.py'
-        command += f' --pi_path {pi_path} --filename {filename}'
-
+        if isinstance(filename, str):
+            command += f' --pi_path {pi_path} --filename {filename}'
+        elif isinstance(filename, list) and filename:
+            command += f' --pi_path {pi_path} --filename {filename[0]}'
+        
         stdin, stdout, stderr = ssh_client.exec_command(command)
         print("UPLOADER: Executing runscript.py")
  
