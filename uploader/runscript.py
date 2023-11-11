@@ -14,11 +14,10 @@ def runscript(pi_path, filename, debug=0):
     """
 
     try: 
-        print(debug)
-        debug == 1 and print("RUNSCRIPT: STARTED")
+        print("RUNSCRIPT: STARTED", flush=True)
         # Navigate to the working directory
         os.chdir(pi_path)
-        debug == 1 and print("RUNSCRIPT: Opening " + filename + " in folder " + pi_path)
+        print("RUNSCRIPT: Opening " + filename + " in folder " + pi_path)
 
         # Perform dos2unix for conversion. 
         # check_dos2unix_installed(debug)
@@ -30,20 +29,20 @@ def runscript(pi_path, filename, debug=0):
 
         # Run filename
         process = subprocess.Popen(['./' + filename], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        debug == 1 and print("RUNSCRIPT: Subprocess opened")
+        print("RUNSCRIPT: Subprocess opened")
 
         stdout, stderr = process.communicate()
-        debug == 1 and print("RUNSCRIPT | STANDARD OUTPUT:")
-        debug == 1 and print("\t INSTRUCTION START\n")
-        debug == 1 and print(stdout.decode())
-        debug == 1 and print(stderr.decode())
-        debug == 1 and print("\t \n INSTRUCTION END")
+        print("RUNSCRIPT | STANDARD OUTPUT:")
+        print("\t INSTRUCTION START\n")
+        print(stdout.decode())
+        print(stderr.decode())
+        print("\t \n INSTRUCTION END")
         # Wait for the process to complete and capture the exit status
         process.wait()
         exit_status = process.returncode
 
         if exit_status == 0:
-            debug == 1 and print("RUNSCRIPT: Execution completed successfully, returning to UPLOADER")
+            print("RUNSCRIPT: Execution completed successfully, returning to UPLOADER")
         else:
             print(f"RUNSCRIPT: Execution failed with exit status {exit_status}, returning to UPLOADER")
 

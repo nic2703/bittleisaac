@@ -60,7 +60,7 @@ def upload_run(pi_list, file_list, debug=0):
                 debug == 1 and print("UPLOADER: Files uploaded")
 
             # Execute runscript.py on the Raspberry Pi automatically, with input argument the name of the first file in file_list
-            command = f'python {pi_path}runscript.py'
+            command = f'python -u {pi_path}runscript.py'
             command += f' --pi_path {pi_path} --filename {file_list[0]} --debug {debug}'
 
             stdin, stdout, stderr = ssh_client.exec_command(command)
@@ -68,8 +68,8 @@ def upload_run(pi_list, file_list, debug=0):
 
             # Print the captured output and error
             debug == 1 and print("UPLOADER | Passing arguments to runscript.py:")
-            debug == 1 and print(stdout.read().decode())
-            debug == 1 and print(stderr.read().decode())
+            print(stdout.read().decode())
+            print(stderr.read().decode())
 
             # Verify whether the script executed correctly on the Raspberry Pi
             exit_status = stdout.channel.recv_exit_status()
@@ -77,6 +77,9 @@ def upload_run(pi_list, file_list, debug=0):
                 debug == 1 and print("UPLOADER: Script executed successfully")
             else:
                 print(f"UPLOADER: Script execution failed with exit status {exit_status}")
+
+            # Print the output of the command
+            print(stdout.read().decode())
 
     except Exception as e:
         print(f"UPLOADER: An error occured: {str(e)}")
