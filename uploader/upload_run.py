@@ -1,5 +1,6 @@
 import paramiko
 import os
+import time
 
 def upload_run(pi_list, file_list, debug=0):
     """
@@ -64,12 +65,10 @@ def upload_run(pi_list, file_list, debug=0):
             command += f' --pi_path {pi_path} --filename {file_list[0]} --debug {debug}'
 
             stdin, stdout, stderr = ssh_client.exec_command(command)
-            debug == 1 and print("UPLOADER: Executing runscript.py")
-
             # Print the captured output and error
-            debug == 1 and print("UPLOADER | Passing arguments to runscript.py:")
-            print(stdout.read().decode())
-            print(stderr.read().decode())
+            debug == 1 and print("UPLOADER | Passing arguments to runscript.py")
+            for line in iter(stdout.readline, ''):
+                print(line, end='')
 
             # Verify whether the script executed correctly on the Raspberry Pi
             exit_status = stdout.channel.recv_exit_status()

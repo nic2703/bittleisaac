@@ -2,7 +2,7 @@
 
 First, it is useful to test whether SSH connection to the Raspberry Pi works. To do this, please follow the instructions in uploader/SSHSetup/README.md
 
-The first of three basic utility functions. This one is used on the home PC. *sbituploader.py* contains all the code needed to: 
+The first of three basic utility functions. This one is used on the home PC. *upload_run.py* contains all the code needed to: 
 - Establish an SSH connection with the Raspberry Pi
 - Send runscript.py and any other files to the Raspberry Pi
 - Automatically execute runscript.py on the Raspberry Pi

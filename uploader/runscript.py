@@ -14,7 +14,7 @@ def runscript(pi_path, filename, debug=0):
     """
 
     try: 
-        print("RUNSCRIPT: STARTED", flush=True)
+        print("RUNSCRIPT: STARTED")
         # Navigate to the working directory
         os.chdir(pi_path)
         print("RUNSCRIPT: Opening " + filename + " in folder " + pi_path)
@@ -30,13 +30,13 @@ def runscript(pi_path, filename, debug=0):
         # Run filename
         process = subprocess.Popen(['./' + filename], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         print("RUNSCRIPT: Subprocess opened")
-
-        stdout, stderr = process.communicate()
-        print("RUNSCRIPT | STANDARD OUTPUT:")
-        print("\t INSTRUCTION START\n")
-        print(stdout.decode())
-        print(stderr.decode())
-        print("\t \n INSTRUCTION END")
+        while True:
+            output = process.stdout.readline()
+            if output == '' and process.poll() is not None:
+                break
+            if output:
+                print(output.strip())
+        
         # Wait for the process to complete and capture the exit status
         process.wait()
         exit_status = process.returncode
