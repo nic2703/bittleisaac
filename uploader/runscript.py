@@ -1,55 +1,107 @@
-# This is a testing runscript.py file.
 import os
 import time
 import subprocess
 import argparse
 
-def runscript(pi_path, filename=None):
+def runscript(pi_path, filename, debug=0):
+    """
+    File that runs on the Raspberry Pi automatically and monitors current program execution. Called automatically by upload_run.
+
+    Args:
+        pi_path: Path on Raspberry Pi to the working directory
+        filename: Name of the file to be executed
+        debug: Set to 1 to output debug messages in the terminal
+    """
+
     try: 
-        if filename is None:
-            print("RUNSCRIPT: No file specified!")
         print("RUNSCRIPT: STARTED")
-        instruction_path = os.path.join(pi_path, filename)
-        process = subprocess.Popen(['python', instruction_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        print("RUNSCRIPT: Subprocess opened")
+        # Navigate to the working directory
+        os.chdir(pi_path)
+        debug == 1 and print("RUNSCRIPT: Opening " + filename + " in folder " + pi_path)
 
-        # Check cancel signal every 0.5 seconds
-        while process.poll() is None:
-            time.sleep(0.5)
+        # Perform dos2unix for conversion. 
+        # check_dos2unix_installed(debug)
+        dos2unix_command = ["dos2unix", filename]
+        subprocess.run(dos2unix_command)
+        # Make the file an executable
+        chmod_command = ["chmod", "+x", filename]
+        subprocess.run(chmod_command)
 
-        # Check if a 'cancel.txt' file exists
-        cancel_file_path = os.path.join(os.path.dirname(pi_path), 'cancel.txt')
-        if os.path.exists(cancel_file_path):
-            print("Cancellation signal detected. Cleaning up and exiting...")
-            os.remove(cancel_file_path)  # Remove the cancellation file
-            process.terminate()  # Terminate the execution of the Python script
-            print("Execution canceled.")
-            return 1
-
-        stdout, stderr = process.communicate()
-        print("RUNSCRIPT | STANDARD OUTPUT:")
-        print("\t INSTRUCTION START\n")
-        print(stdout.decode())
-        print(stderr.decode())
-        print("\t \n INSTRUCTION END")
+        # Run filename
+        process = subprocess.Popen(['./' + filename], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        debug == 1 and print("RUNSCRIPT: Subprocess opened")
+        while True:
+            output = process.stdout.readline()
+            if output == '' and process.poll() is not None:
+                break
+            if output:
+                print(output.strip())
+        
         # Wait for the process to complete and capture the exit status
         process.wait()
         exit_status = process.returncode
 
         if exit_status == 0:
-            print("RUNSCRIPT: Execution completed successfully, returning to UPLOADER")
+            debug == 1 and print("RUNSCRIPT: Execution completed successfully, returning to UPLOADER")
         else:
             print(f"RUNSCRIPT: Execution failed with exit status {exit_status}, returning to UPLOADER")
 
     except Exception as e:
         print(f"RUNSCRIPT: An error occured: {str(e)}")
 
+
+def check_dos2unix_installed(debug=0):
+    """
+    Function that checks whether dos2unix is installed on the Raspberry Pi. If not, it installs it.
+
+    Args:
+        debug: Set to 1 to output debug messages in the terminal
+    """
+    try: 
+        subprocess.run(['dos2unix', '--version'], check=True)
+
+    except subprocess.CalledProcessError:
+        print("RUNSCRIPT: dos2unix is not installed. Installing...")
+
+        try: 
+            # Install dos2unix
+            update_process = subprocess.Popen(['sudo', 'apt-get', 'update'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            update_process.communicate()
+            if update_process.returncode != 0:
+                raise subprocess.CalledProcessError(update_process.returncode, update_process.args)
+
+            install_process = subprocess.Popen(['sudo', 'apt-get', 'install', '-y', 'dos2unix'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            install_process.communicate()
+            if install_process.returncode != 0:
+                raise subprocess.CalledProcessError(install_process.returncode, install_process.args)
+
+            print("dos2unix installed successfully.")
+
+        except subprocess.CalledProcessError as install_error:
+            print(f"Error installing dos2unix: {install_error}")
+            raise  # Re-raise the exception if installation fails
+
+        finally:
+            # Close subprocesses to avoid resource leaks
+            if update_process:
+                update_process.stdout.close()
+                update_process.stderr.close()
+
+            if install_process:
+                install_process.stdout.close()
+                install_process.stderr.close()
+
+    else: 
+        debug == 1 and print("dos2unix is already installed")
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run a Python script with cancellation support.")
     parser.add_argument("--pi_path", help="Path to the Python script to execute.")
     parser.add_argument("--filename", help="Name of the user Python file.")
+    parser.add_argument("--debug", help="Debugging mode toggle")
 
     args = parser.parse_args()
-    print("    PI_PATH: " + args.pi_path)
-    print("    FILENAME: " + args.filename)
-    runscript(args.pi_path, args.filename)
+    debug == 1 and print("    PI_PATH: " + args.pi_path)
+    debug == 1 and print("    FILENAME: " + args.filename)
+    debug == 1 and print("    DEBUG MODE: " + args.debug)
+    runscript(args.pi_path, args.filename, args.debug)
