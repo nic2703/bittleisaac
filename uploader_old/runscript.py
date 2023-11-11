@@ -9,13 +9,30 @@ def runscript(pi_path, filename=None):
         if filename is None:
             print("RUNSCRIPT: No file specified!")
         print("RUNSCRIPT: STARTED")
-        instruction_path = os.path.join(pi_path, filename)
-        process = subprocess.Popen(['python', instruction_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+        if isinstance(filename, str):
+            instruction_path = os.path.join(pi_path, filename)
+            print("RUNSCRIPT: Opening " + filename)
+        elif isinstance(filename, list) and filename:
+            instruction_path = os.path.join(pi_path, filename[0])
+            print("RUNSCRIPT: Opening " + filename[0])
+            filename = filename[0]
+
+        # instruction_path = os.path.join(pi_path, filename)
+        os.chdir(pi_path)
+
+        dos2unix_command = ["dos2unix", filename]
+        subprocess.run(dos2unix_command)
+        time.sleep(0.5)
+        chmod_command = ["chmod", "+x", filename]
+        subprocess.run(chmod_command)
+        time.sleep(0.5)
+        process = subprocess.Popen(['./' + filename], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         print("RUNSCRIPT: Subprocess opened")
 
         # Check cancel signal every 0.5 seconds
         while process.poll() is None:
-            time.sleep(0.5)
+            time.sleep(0.25)
 
         # Check if a 'cancel.txt' file exists
         cancel_file_path = os.path.join(os.path.dirname(pi_path), 'cancel.txt')
