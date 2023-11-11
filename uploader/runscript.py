@@ -17,7 +17,7 @@ def runscript(pi_path, filename, debug=0):
         print("RUNSCRIPT: STARTED")
         # Navigate to the working directory
         os.chdir(pi_path)
-        print("RUNSCRIPT: Opening " + filename + " in folder " + pi_path)
+        debug == 1 and print("RUNSCRIPT: Opening " + filename + " in folder " + pi_path)
 
         # Perform dos2unix for conversion. 
         # check_dos2unix_installed(debug)
@@ -29,7 +29,7 @@ def runscript(pi_path, filename, debug=0):
 
         # Run filename
         process = subprocess.Popen(['./' + filename], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        print("RUNSCRIPT: Subprocess opened")
+        debug == 1 and print("RUNSCRIPT: Subprocess opened")
         while True:
             output = process.stdout.readline()
             if output == '' and process.poll() is not None:
@@ -42,7 +42,7 @@ def runscript(pi_path, filename, debug=0):
         exit_status = process.returncode
 
         if exit_status == 0:
-            print("RUNSCRIPT: Execution completed successfully, returning to UPLOADER")
+            debug == 1 and print("RUNSCRIPT: Execution completed successfully, returning to UPLOADER")
         else:
             print(f"RUNSCRIPT: Execution failed with exit status {exit_status}, returning to UPLOADER")
 
@@ -101,7 +101,7 @@ if __name__ == "__main__":
     parser.add_argument("--debug", help="Debugging mode toggle")
 
     args = parser.parse_args()
-    print("    PI_PATH: " + args.pi_path)
-    print("    FILENAME: " + args.filename)
-    print("    DEBUG MODE: " + args.debug)
+    debug == 1 and print("    PI_PATH: " + args.pi_path)
+    debug == 1 and print("    FILENAME: " + args.filename)
+    debug == 1 and print("    DEBUG MODE: " + args.debug)
     runscript(args.pi_path, args.filename, args.debug)
