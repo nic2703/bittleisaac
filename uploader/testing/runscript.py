@@ -12,11 +12,12 @@ def runscript(pi_path, filename, debug=0):
         filename: Name of the file to be executed
         debug: Set to 1 to output debug messages in the terminal
     """
+
     try: 
         print("RUNSCRIPT: STARTED")
         # Navigate to the working directory
         os.chdir(pi_path)
-        print("RUNSCRIPT: Opening " + filename + " in folder " + pi_path)
+        debug == 1 and print("RUNSCRIPT: Opening " + filename + " in folder " + pi_path)
 
         # Perform dos2unix for conversion. 
         # check_dos2unix_installed(debug)
@@ -27,15 +28,21 @@ def runscript(pi_path, filename, debug=0):
         subprocess.run(chmod_command)
 
         # Run filename
-        process = subprocess.Popen(['./' + filename], stdout=subprocess.PIPE)
-            
-        print("\t \n INSTRUCTION END")
+        process = subprocess.Popen(['./' + filename], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        debug == 1 and print("RUNSCRIPT: Subprocess opened")
+        while True:
+            output = process.stdout.readline()
+            if output == '' and process.poll() is not None:
+                break
+            if output:
+                print(output.strip())
+        
         # Wait for the process to complete and capture the exit status
         process.wait()
         exit_status = process.returncode
 
         if exit_status == 0:
-            print("RUNSCRIPT: Execution completed successfully, returning to UPLOADER")
+            debug == 1 and print("RUNSCRIPT: Execution completed successfully, returning to UPLOADER")
         else:
             print(f"RUNSCRIPT: Execution failed with exit status {exit_status}, returning to UPLOADER")
 
@@ -94,7 +101,7 @@ if __name__ == "__main__":
     parser.add_argument("--debug", help="Debugging mode toggle")
 
     args = parser.parse_args()
-    print("    PI_PATH: " + args.pi_path)
-    print("    FILENAME: " + args.filename)
-    print("    DEBUG MODE: " + args.debug)
+    debug == 1 and print("    PI_PATH: " + args.pi_path)
+    debug == 1 and print("    FILENAME: " + args.filename)
+    debug == 1 and print("    DEBUG MODE: " + args.debug)
     runscript(args.pi_path, args.filename, args.debug)
