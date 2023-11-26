@@ -33,7 +33,7 @@ These are the essential files for training Bittle:
 Once you have set up the necessary rlgpu environment and the packages, the following will allow you to quickly restart training when reloading: 
 ```
     $ conda activate rlgpu
-    $ export LD_LIBRARY_PATH=/home/./miniconda3/envs/rlgpu/lib:$LD_LIBRARY_PATH
+    $ export LD_LIBRARY_PATH=/home/./miniconda3/envs/rlgpu/lib
     $ cd isaacgymenvs
     $ python train.py task=Bittle checkpoint=runs/Bittle_.../nn/Bittle.pth
 ``` 
