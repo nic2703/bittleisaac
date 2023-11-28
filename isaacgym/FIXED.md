@@ -87,3 +87,21 @@ When opening the folder, make sure that you are not in the conda environment yet
 (rlgpu) ...:~/.../bitrobotics/isaacgym/isaacgymenvs$ python train.py task=Cartpole
 ```
 
+# Task Bittle not found, multiple isaacgymenvs installations
+If you have multiple folders using isaacgymenvs, they might not be compatible. Don’t worry, you do not need to delete any. Check your currently location of the ‘isaacgymenvs’ installation:
+
+´´´
+pip show isaacgymenvs
+´´´
+
+If this is not in the ‘bitrobotics/isaacgym’ directory, can set it there using the following: 
+- Navigate to bitrobotics/isaacgym
+
+``` 
+(base) ...:~/.../bitrobotics/isaacgym$ conda activate rlgpu 
+(rlgpu) ...:~/.../bitrobotics/isaacgym$ pip install -e . 
+(rlgpu) ...:~/.../bitrobotics/isaacgym$ pip uninstall nvidia-cublas-cu11 
+(rlgpu) ...:~/.../bitrobotics/isaacgym$ export LD_LIBRARY_PATH=/home/.../miniconda3/envs/rlgpu/lib 
+(rlgpu) ...:~/.../bitrobotics/isaacgym$ cd isaacgymenvs 
+(rlgpu) ...:~/.../bitrobotics/isaacgym/isaacgymenvs$ python train.py task=Cartpole 
+```

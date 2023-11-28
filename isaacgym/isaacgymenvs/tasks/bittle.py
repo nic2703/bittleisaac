@@ -232,7 +232,7 @@ class Bittle(VecTask):
         self.compute_reward(self.actions)
 
     def compute_reward(self, actions):
-        self.rew_buf[:], self.reset_buf[:] = compute_anymal_reward(
+        self.rew_buf[:], self.reset_buf[:] = compute_moving_reward(
             # tensors
             self.root_states,
             self.commands,
@@ -374,6 +374,76 @@ def compute_anymal_reward(
 
     return total_reward.detach(), reset
 
+@torch.jit.script
+def compute_moving_reward(
+    # tensors
+    root_states: Tensor,
+    commands: Tensor,
+    prev_torques: Tensor,
+    torques: Tensor,
+    contact_forces: Tensor,
+    knee_indices: Tensor,
+    episode_lengths: Tensor,
+    # Dict
+    rew_scales: Dict[str, float],
+    # other
+    base_index: int,
+    max_episode_length: int,
+    targets,
+    vec0,
+    vec1,
+    inv_start_rot) -> Tuple[Tensor, Tensor]:  # (reward, reset, feet_in air, feet_air_time, episode sums)
+
+    # prepare quantities (TODO: return from obs ?)
+    base_quat = root_states[:, 3:7]
+    base_lin_vel = quat_rotate_inverse(base_quat, root_states[:, 7:10])
+    base_ang_vel = quat_rotate_inverse(base_quat, root_states[:, 10:13])
+
+    torso_position = root_states[:, 0:3]
+    torso_rotation = root_states[:, 3:7]
+
+    to_target = targets - torso_position
+    to_target[:, 2] = 0
+    target_dirs = normalize(to_target)
+
+    num_envs = torso_position.shape[0]
+    torso_quat = quat_mul(torso_rotation, inv_start_rot)
+
+    heading_vec = get_basis_vector(torso_quat, vec0).view(num_envs, 3)
+    heading_proj = torch.bmm(heading_vec.view(num_envs, 1, 3), target_dirs.view(num_envs, 3, 1)).view(num_envs)
+
+    # reward from direction headed
+    heading_weight_tensor = torch.ones_like(heading_proj) * rew_scales["heading_scale"]
+    heading_reward = torch.where(heading_proj > 0.8, heading_weight_tensor, rew_scales["heading_scale"] * heading_proj / 0.8)
+
+    up_vec = get_basis_vector(torso_quat, vec1).view(num_envs, 3)
+    up_proj = up_vec[:, 2]
+
+    # aligning up axis of ant and environment
+    up_reward = torch.zeros_like(heading_reward)
+    up_reward = torch.where(up_proj > 0.9, up_reward + rew_scales['up_scale'], up_reward)
+
+    # velocity tracking reward
+    lin_vel_error = torch.sum(torch.square(commands[:, :2] - base_lin_vel[:, :2]), dim=1)
+    ang_vel_error = torch.square(commands[:, 2] - base_ang_vel[:, 2])
+    rew_lin_vel_xy = torch.exp(-lin_vel_error/0.25) * rew_scales["lin_vel_xy"]
+    rew_ang_vel_z = torch.exp(-ang_vel_error/0.25) * rew_scales["ang_vel_z"]
+
+    # torque penalty(reward)
+    rew_torque = torch.sum(torch.abs(prev_torques - torques), dim=1) * rew_scales["torque"]
+
+    total_reward = rew_lin_vel_xy + rew_ang_vel_z + rew_torque + up_reward + heading_reward 
+    total_reward = torch.clip(total_reward, 0., None)
+
+    # reset agents
+    reset = torch.norm(contact_forces[:, base_index, :], dim=1) > 1.5
+    reset = reset | torch.any(torch.norm(contact_forces[:, knee_indices, :], dim=2) > 1., dim=1)
+    reset = torch.where(up_proj < 0.85, torch.ones_like(reset), reset)
+
+    time_out = episode_lengths >= max_episode_length - 1  # no terminal reward for time-outs
+    reset = reset | time_out
+
+    return total_reward.detach(), reset
 
 @torch.jit.script
 def compute_anymal_observations(root_states: Tensor,
