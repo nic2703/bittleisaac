@@ -1,5 +1,5 @@
 # bitrobotics
-(WIP) Library for various Bittle, Python and ROS integrations. My intention is to build a library of functions to easily upload to and control Petoi Bittle using a Raspberry Pi 3A+. This probably is going to expand to ROS/Isaac Sim integration. 
+(WIP) Library for various Bittle and IsaacGym integrations.
 
 ## What currently works
 I am very pleased to announce that /isaacgym now works. Please follow the instructions in the associated README.md.
